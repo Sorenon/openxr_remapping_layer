@@ -1,6 +1,4 @@
 mod entry;
-#[allow(dead_code)]
-pub mod loader_interfaces;
 pub mod openxr_overrides;
 pub mod wrappers;
 
@@ -10,7 +8,7 @@ pub const LAYER_NAME: &str = "XR_APILAYER_SORENON_suinput_layer";
 
 pub fn initialize() -> (
     xr::pfn::GetInstanceProcAddr,
-    loader_interfaces::FnCreateApiLayerInstance,
+    xr::loader_interfaces::FnCreateApiLayerInstance,
 ) {
     wrappers::initialize();
     (

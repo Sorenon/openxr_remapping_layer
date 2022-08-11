@@ -1,3 +1,4 @@
+mod action_set;
 pub mod instance;
 mod session;
 
@@ -11,9 +12,10 @@ use crate::wrappers::instance::InstanceWrapper;
 use crate::wrappers::XrHandle;
 use crate::ToResult;
 
-const INTERCEPTORS: [unsafe fn(&str) -> Option<pfn::VoidFunction>; 2] = [
-    instance::get_instance_interceptors,
-    session::get_session_interceptors,
+const INTERCEPTORS: [unsafe fn(&str) -> Option<pfn::VoidFunction>; 3] = [
+    instance::get_interceptors,
+    session::get_interceptors,
+    action_set::get_interceptors,
 ];
 
 pub(crate) unsafe extern "system" fn get_instance_proc_addr(

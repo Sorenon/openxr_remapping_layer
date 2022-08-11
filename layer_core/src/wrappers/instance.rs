@@ -2,11 +2,19 @@ use std::sync::{atomic::AtomicBool, Arc};
 
 use dashmap::DashMap;
 use log::{debug, info};
+use once_cell::sync::OnceCell;
 use openxr::sys as xr;
+use openxr_driver::OpenXRDriver;
+use parking_lot::Mutex;
+use suinput::{SuInputRuntime, SuInstance};
 
-use crate::ToResult;
+use crate::{str_from_bytes_until_nul, ToResult};
 
-use super::{session::SessionWrapper, XrHandle, XrWrapper};
+use super::{
+    layer_action_set::{self, LayerActionSet},
+    session::SessionWrapper,
+    XrHandle, XrWrapper,
+};
 
 pub struct InstanceWrapper {
     pub handle: xr::Instance,
@@ -14,6 +22,9 @@ pub struct InstanceWrapper {
     pub systems: DashMap<xr::SystemId, SystemMeta>,
     pub sessions: DashMap<xr::Session, Arc<SessionWrapper>>,
     pub runtime: Runtime,
+    pub suinput_runtime: SuInputRuntime,
+    pub suinput_instance: SuInstance,
+    pub suinput_driver: Mutex<OpenXRDriver>,
 }
 
 pub struct InnerInstance {
@@ -87,12 +98,34 @@ impl InstanceWrapper {
             handle: *session,
             instance: Arc::downgrade(self),
             inner: self.inner.clone(),
+            suinput_session: OnceCell::new(),
         });
 
         *session = session_wrapper.handle;
         xr::Session::all_wrappers().insert(*session, session_wrapper.clone());
         self.sessions.insert(*session, session_wrapper);
         info!("Session created: {:?}", *session);
+
+        Ok(xr::Result::SUCCESS)
+    }
+
+    pub fn xr_create_action_set(
+        self: &Arc<Self>,
+        create_info: &xr::ActionSetCreateInfo,
+        handle_out: &mut xr::ActionSet,
+    ) -> Result<xr::Result, xr::Result> {
+        let name = str_from_bytes_until_nul(&create_info.action_set_name[..])?;
+        let su_action_set = self
+            .suinput_instance
+            .create_action_set(name, create_info.priority);
+
+        let handle = layer_action_set::all_mut().insert(Arc::new(LayerActionSet {
+            instance: Arc::downgrade(self),
+            inner: self.inner.clone(),
+            su_action_set,
+        }));
+
+        *handle_out = xr::ActionSet::from_raw(handle.to_bits());
 
         Ok(xr::Result::SUCCESS)
     }

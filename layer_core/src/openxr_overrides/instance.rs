@@ -2,12 +2,13 @@ use openxr::sys::{self as xr, pfn};
 
 use crate::wrappers::XrHandle;
 
-pub(super) unsafe fn get_instance_interceptors(name: &str) -> Option<pfn::VoidFunction> {
+pub(super) unsafe fn get_interceptors(name: &str) -> Option<pfn::VoidFunction> {
     use std::mem::transmute;
     use xr::pfn::*;
     Some(match name {
         "xrGetSystem" => transmute(xr_get_system as GetSystem),
         "xrCreateSession" => transmute(xr_create_session as CreateSession),
+        "xrCreateActionSet" => transmute(xr_create_action_set as CreateActionSet),
         _ => return None,
     })
 }
@@ -26,4 +27,12 @@ unsafe extern "system" fn xr_create_session(
     session: *mut xr::Session,
 ) -> xr::Result {
     instance.run(|instance| instance.xr_create_session(&*create_info, &mut *session))
+}
+
+unsafe extern "system" fn xr_create_action_set(
+    instance: xr::Instance,
+    create_info: *const xr::ActionSetCreateInfo,
+    handle: *mut xr::ActionSet,
+) -> xr::Result {
+    instance.run(|instance| instance.xr_create_action_set(&*create_info, &mut *handle))
 }

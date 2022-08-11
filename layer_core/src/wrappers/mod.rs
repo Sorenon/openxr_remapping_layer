@@ -1,4 +1,6 @@
 pub mod instance;
+pub mod layer_action;
+pub mod layer_action_set;
 pub mod session;
 
 use std::{
@@ -10,18 +12,23 @@ use std::{
 use dashmap::DashMap;
 use once_cell::sync::OnceCell;
 use openxr::sys as xr;
+use parking_lot::RwLock;
+use thunderdome::Arena;
 
-use self::instance::InnerInstance;
+use self::{instance::InnerInstance, layer_action::LayerAction, layer_action_set::LayerActionSet};
 
 static mut INSTANCE_WRAPPERS: OnceCell<DashMap<xr::Instance, Arc<instance::InstanceWrapper>>> =
     OnceCell::new();
 static mut SESSION_WRAPPERS: OnceCell<DashMap<xr::Session, Arc<session::SessionWrapper>>> =
     OnceCell::new();
+static mut ACTION_SETS: OnceCell<RwLock<Arena<Arc<LayerActionSet>>>> = OnceCell::new();
+static mut ACTIONS: OnceCell<RwLock<Arena<Arc<LayerAction>>>> = OnceCell::new();
 
 pub(crate) fn initialize() {
     unsafe {
         INSTANCE_WRAPPERS.get_or_init(DashMap::new);
         SESSION_WRAPPERS.get_or_init(DashMap::new);
+        ACTION_SETS.get_or_init(|| RwLock::new(Arena::new()));
     }
 }
 

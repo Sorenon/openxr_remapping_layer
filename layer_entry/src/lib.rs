@@ -3,8 +3,8 @@ use std::{ffi::CStr, fs::File, path::Path};
 use log::{debug, error, info};
 use once_cell::sync::OnceCell;
 use openxr::sys as xr;
-use xr::loader_interfaces::*;
 use simplelog::*;
+use xr::loader_interfaces::*;
 
 static LOGGER_LOADED: OnceCell<()> = OnceCell::new();
 

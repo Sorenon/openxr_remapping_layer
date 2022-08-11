@@ -9,3 +9,7 @@ log = "0.4"
 openxr = { git = "https://github.com/Sorenon/openxrs", default-features = false, branch = "layer"}
 simplelog = "0.12"
 once_cell = "1.13"
+suinput = { path = "../../suinput/suinput", package = "suinput" }
+openxr-driver = { path = "../../suinput/drivers/openxr-driver" }
+parking_lot = "0.12"
+thunderdome = "0.5"

@@ -1,16 +1,17 @@
 use std::ops::Deref;
 use std::sync::atomic::AtomicBool;
-use std::{ffi::CStr, sync::Arc};
+use std::sync::Arc;
 
-use openxr::sys::loader_interfaces::*;
 use crate::wrappers::instance::{InnerInstance, InstanceWrapper, Runtime};
 use crate::wrappers::XrHandle;
-use crate::ToResult;
+use crate::{str_from_bytes_until_nul, ToResult};
+use openxr::sys::loader_interfaces::*;
 
 use log::{debug, error, info};
 
-use openxr::sys as xr;
+use openxr::{sys as xr, Instance};
 use openxr::{ExtensionSet, InstanceExtensions, Result};
+use parking_lot::Mutex;
 
 pub(crate) unsafe extern "system" fn create_api_layer_instance(
     instance_info: *const xr::InstanceCreateInfo,
@@ -31,73 +32,36 @@ fn create_instance(
 ) -> Result<xr::Result> {
     let next_info = &unsafe { *layer_info.next_info };
 
-    if unsafe { CStr::from_ptr(std::mem::transmute(next_info.layer_name.as_ptr())) }
-        .to_string_lossy()
-        != crate::LAYER_NAME
-    {
+    if str_from_bytes_until_nul(&next_info.layer_name[..])? != crate::LAYER_NAME {
         error!(
             "Crate instance failed: Incorrect layer_name `{}`",
-            unsafe { CStr::from_ptr(std::mem::transmute(next_info.layer_name.as_ptr())) }
-                .to_string_lossy()
+            str_from_bytes_until_nul(&next_info.layer_name[..])?
         );
         return Err(xr::Result::ERROR_VALIDATION_FAILURE);
     }
 
     debug!("Initializing OpenXR Entry");
 
+    let application_name =
+        str_from_bytes_until_nul(&(*instance_info).application_info.application_name[..])?;
+
     //Setup the OpenXR wrapper for the layer bellow us
-    let entry = unsafe { openxr::Entry::from_get_instance_proc_addr(next_info.next_get_instance_proc_addr)? };
-
-    let available_extensions = entry.enumerate_extensions()?;
-
-    //TODO set this to true depending on env var
-    let disable_opengl = true;
+    let entry = unsafe {
+        openxr::Entry::from_get_instance_proc_addr(next_info.next_get_instance_proc_addr)?
+    };
 
     //Initialize the layer bellow us
     let result = unsafe {
-        let mut needs_opengl_replacement = false;
-
-        let mut extensions = std::slice::from_raw_parts(
-            instance_info.enabled_extension_names,
-            instance_info.enabled_extension_count as usize,
-        )
-        .iter()
-        .filter_map(|ext| {
-            let ext_name = CStr::from_ptr(*ext).to_str().unwrap();
-            if ext_name == "XR_KHR_opengl_enable" {
-                if disable_opengl {
-                    needs_opengl_replacement = true;
-                } else if !available_extensions.khr_opengl_enable {
-                    needs_opengl_replacement = true;
-                    return None;
-                }
-            }
-            Some(*ext)
-        })
-        .collect::<Vec<_>>();
-
-        if needs_opengl_replacement {
-            extensions.push("XR_KHR_vulkan_enable2\0".as_ptr() as *const i8);
-        }
-
-        let mut instance_info2 = *instance_info;
-        instance_info2.enabled_extension_names = extensions.as_ptr();
-        instance_info2.enabled_extension_count = extensions.len() as u32;
-
         let mut layer_info2 = *layer_info;
         layer_info2.next_info = (*layer_info2.next_info).next;
-
-        (next_info.next_create_api_layer_instance)(&instance_info2, &layer_info2, instance).result()
+        (next_info.next_create_api_layer_instance)(instance_info, &layer_info2, instance).result()
     }?;
-
-    let mut supported_extensions = ExtensionSet::default();
-    supported_extensions.khr_vulkan_enable2 = true;
 
     let inner = unsafe {
         InnerInstance {
             poison: AtomicBool::new(false),
             core: openxr::raw::Instance::load(&entry, *instance)?,
-            exts: InstanceExtensions::load(&entry, *instance, &supported_extensions)?,
+            exts: InstanceExtensions::load(&entry, *instance, &ExtensionSet::default())?,
         }
     };
 
@@ -107,10 +71,7 @@ fn create_instance(
             .result()?;
         let instance_properties = instance_properties.assume_init();
 
-        CStr::from_ptr(std::mem::transmute(
-            instance_properties.runtime_name.as_ptr(),
-        ))
-        .to_string_lossy()
+        str_from_bytes_until_nul(&instance_properties.runtime_name[..])?.to_owned()
     };
 
     let runtime = match runtime_name.deref() {
@@ -121,19 +82,25 @@ fn create_instance(
         _ => Runtime::Other(runtime_name.to_string()),
     };
 
+    let (suinput_runtime, suinput_instance, suinput_driver) = crate::input::create(
+        unsafe { Instance::from_raw(entry, *instance, inner.exts).unwrap() },
+        application_name,
+    );
+
     let wrapper = InstanceWrapper {
         handle: *instance,
         inner: Arc::new(inner),
         systems: Default::default(),
         sessions: Default::default(),
         runtime,
+        suinput_runtime,
+        suinput_instance,
+        suinput_driver: Mutex::new(suinput_driver),
     };
 
     xr::Instance::all_wrappers().insert(*instance, Arc::new(wrapper));
 
-    info!("Instance created with name `{}`", unsafe {
-        CStr::from_ptr(&instance_info.application_info.application_name as _).to_string_lossy()
-    });
+    info!("Instance created with name `{}`", application_name);
 
     Ok(result)
 }

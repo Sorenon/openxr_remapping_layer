@@ -1,47 +1,20 @@
-# Sorenon OpenXR Layer
-(I'm not good with names)
+# OpenXR Remapping Layer
 
+An OpenXR remapping layer powered by [SuInput](https://github.com/Sorenon/suinput) 
 
-As of writing, both the SteamVR and WMR OpenXR runtimes have a few significant issues / missing features. 
-WMR does not provide any OpenGL / Vulkan extensions and SteamVR on Linux is essentially broken.
-
-WMR's issues can be fixed through the use of SteamVR. <br>
-[This existing layer](https://github.com/ChristophHaag/gl_context_fix_layer) also attempts to fix SteamVR's GLX support and may be more performant (but has some stability issues).
-
-
-## How the layer works
-When the application creates an OpenGL session, the layer creates a Vulkan session and uses external memory extensions to share swapchain images between the apis. 
-This adds the extra overhead of creating a second swapchain to expose to the application, and one draw call in `xrReleaseSwapchainImage` to copy and transfrom the image into the OpenXR swapchain.
-<br><br>
-There are some notable areas that can be improved. Mainly using an interop semephore instead of a `glFinish` call and passing a fence to an async thread instead of a `vkQueueWaitIdle` call.
-
-## Fixes:
-- https://github.com/ValveSoftware/SteamVR-for-Linux/issues/421
-- https://github.com/ValveSoftware/SteamVR-for-Linux/issues/466
-
-## Does not fix:
-- General system wide deadlocks caused by SteamVR
-- SteamVR's overall worse performance compared to Monado
-- https://github.com/ValveSoftware/SteamVR-for-Linux/issues/422<br>^ Is it possible to fix this by calling xrDestroyInstance in its own thread?
-- https://github.com/ValveSoftware/SteamVR-for-Linux/issues/461
-- https://github.com/ValveSoftware/SteamVR-for-Linux/issues/479
-
-## Installation instructions
-- Install the [Rust toolchain](https://www.rust-lang.org/tools/install)
-- Clone this repository
-- Install with `cargo run --release`
-- Uninstall with `cargo run --release uninstall`
-
-## Current TODO:
-- [x] OpenGL Frontend
-- [x] Vulkan Backend
-- [x] Linux Installer
-- [ ] Correctly handle sRGB formats
-- [ ] Investigate improving performance
-
-## If perfomance impact can be minimized:
-- [ ] D3D11 Backend
-- [ ] Vulkan Frontend
-- [ ] Windows Installer
-- [ ] FSR / NIS
-- [ ] Attempt to deal with other runtime bugs
+## TODO
+- [ ] Pose Actions / Action Spaces
+- [ ] GUI
+- [ ] Basic Remapping
+- [ ] `XR_KHR_binding_modification`
+- [ ] `XR_EXT_dpad_binding`
+- [ ] `XR_VALVE_analog_threshold`
+- [ ] Extension Controller Support
+- [ ] Mouse + Keyboard Support
+- [ ] SDL2 Controller Support
+- [ ] Unofficial OpenXR Extension
+- [ ] VR Overlay based on `XR_EXTX_overlay`
+- [ ] Merge with and fix my [other layer](https://github.com/Sorenon/sorenon_openxr_layer) for XR_EXTX_overlay-less runtimes
+- [ ] Text Input
+- [ ] Quest Support
+- [ ] Installer

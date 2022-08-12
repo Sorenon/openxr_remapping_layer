@@ -38,18 +38,15 @@ impl SubActions {
     pub fn new(action_set: &SuActionSet, create_info: &xr::ActionCreateInfo, name: &str) -> Self {
         if create_info.count_subaction_paths == 0 {
             return Self::None(match create_info.action_type {
-                xr::ActionType::BOOLEAN_INPUT => SingletonAction::Boolean(
-                    action_set.create_action(name, Default::default()),
-                    Default::default(),
-                ),
-                xr::ActionType::FLOAT_INPUT => SingletonAction::Float(
-                    action_set.create_action(name, Default::default()),
-                    Default::default(),
-                ),
-                xr::ActionType::VECTOR2F_INPUT => SingletonAction::Vector2f(
-                    action_set.create_action(name, Default::default()),
-                    Default::default(),
-                ),
+                xr::ActionType::BOOLEAN_INPUT => {
+                    SingletonAction::Boolean(action_set.create_action(name, Default::default()))
+                }
+                xr::ActionType::FLOAT_INPUT => {
+                    SingletonAction::Float(action_set.create_action(name, Default::default()))
+                }
+                xr::ActionType::VECTOR2F_INPUT => {
+                    SingletonAction::Vector2f(action_set.create_action(name, Default::default()))
+                }
                 xr::ActionType::POSE_INPUT => SingletonAction::Pose(()),
                 xr::ActionType::VIBRATION_OUTPUT => SingletonAction::Vibration(()),
                 _ => todo!("TODO handle unknown action type"),
@@ -67,39 +64,18 @@ impl SubActions {
         Self::Some(match create_info.action_type {
             xr::ActionType::BOOLEAN_INPUT => ManySubActions::Boolean(
                 sub_action_paths
-                    .map(|path| {
-                        (
-                            *path,
-                            action_set.create_action(name, Default::default()),
-                            Default::default(),
-                        )
-                    })
+                    .map(|path| (*path, action_set.create_action(name, Default::default())))
                     .collect(),
-                Default::default(),
             ),
             xr::ActionType::FLOAT_INPUT => ManySubActions::Float(
                 sub_action_paths
-                    .map(|path| {
-                        (
-                            *path,
-                            action_set.create_action(name, Default::default()),
-                            Default::default(),
-                        )
-                    })
+                    .map(|path| (*path, action_set.create_action(name, Default::default())))
                     .collect(),
-                Default::default(),
             ),
             xr::ActionType::VECTOR2F_INPUT => ManySubActions::Vector2f(
                 sub_action_paths
-                    .map(|path| {
-                        (
-                            *path,
-                            action_set.create_action(name, Default::default()),
-                            Default::default(),
-                        )
-                    })
+                    .map(|path| (*path, action_set.create_action(name, Default::default())))
                     .collect(),
-                Default::default(),
             ),
             xr::ActionType::POSE_INPUT => ManySubActions::Pose(()),
             xr::ActionType::VIBRATION_OUTPUT => ManySubActions::Vibration(()),
@@ -109,20 +85,17 @@ impl SubActions {
 }
 
 pub enum SingletonAction {
-    Boolean(SuAction<bool>, BooleanState),
-    Float(SuAction<Axis1d>, FloatState),
-    Vector2f(SuAction<Axis2d>, Vector2fState),
+    Boolean(SuAction<bool>),
+    Float(SuAction<Axis1d>),
+    Vector2f(SuAction<Axis2d>),
     Pose(()),
     Vibration(()),
 }
 
 pub enum ManySubActions {
-    Boolean(Vec<(xr::Path, SuAction<bool>, BooleanState)>, BooleanState),
-    Float(Vec<(xr::Path, SuAction<Axis1d>, FloatState)>, FloatState),
-    Vector2f(
-        Vec<(xr::Path, SuAction<Axis2d>, Vector2fState)>,
-        Vector2fState,
-    ),
+    Boolean(Vec<(xr::Path, SuAction<bool>)>),
+    Float(Vec<(xr::Path, SuAction<Axis1d>)>),
+    Vector2f(Vec<(xr::Path, SuAction<Axis2d>)>),
     Pose(()),
     Vibration(()),
 }

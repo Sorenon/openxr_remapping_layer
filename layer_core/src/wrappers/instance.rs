@@ -97,8 +97,8 @@ impl InstanceWrapper {
         let session_wrapper = Arc::new(SessionWrapper {
             handle: *session,
             instance: Arc::downgrade(self),
-            inner: self.inner.clone(),
-            suinput_session: OnceCell::new(),
+            inner_instance: self.inner.clone(),
+            inner: OnceCell::new(),
         });
 
         *session = session_wrapper.handle;

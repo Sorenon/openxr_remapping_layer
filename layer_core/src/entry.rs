@@ -44,7 +44,6 @@ fn create_instance(
 
     let application_name =
         str_from_bytes_until_nul(&(*instance_info).application_info.application_name[..])?;
-
     //Setup the OpenXR wrapper for the layer bellow us
     let entry = unsafe {
         openxr::Entry::from_get_instance_proc_addr(next_info.next_get_instance_proc_addr)?

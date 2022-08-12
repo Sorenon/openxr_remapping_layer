@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 dashmap = "5.3"
 log = "0.4"
-openxr = { git = "https://github.com/Sorenon/openxrs", default-features = false, branch = "layer"}
+openxr = { git = "https://github.com/Sorenon/openxrs", default-features = false, branch = "layer-breaking"}
 simplelog = "0.12"
 once_cell = "1.13"
 suinput = { path = "../../suinput/suinput", package = "suinput" }

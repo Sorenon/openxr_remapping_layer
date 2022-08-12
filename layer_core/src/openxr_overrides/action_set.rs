@@ -7,12 +7,12 @@ pub(super) unsafe fn get_interceptors(name: &str) -> Option<xr::pfn::VoidFunctio
     use std::mem::transmute;
     use xr::pfn::*;
     Some(match name {
-        "xrCreateAction" => transmute(xr_create_action as CreateAction),
+        "xrCreateAction" => transmute(create_action as CreateAction),
         _ => return None,
     })
 }
 
-unsafe extern "system" fn xr_create_action(
+unsafe extern "system" fn create_action(
     action_set: xr::ActionSet,
     create_info: *const xr::ActionCreateInfo,
     action: *mut xr::Action,

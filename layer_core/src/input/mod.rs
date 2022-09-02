@@ -1,12 +1,15 @@
-use openxr::{Entry, Instance};
+use openxr::Instance;
 use openxr_driver::OpenXRDriver;
-use suinput::{SuInputRuntime, SuInstance};
+use suinput::{instance::SuInstance, SuInputRuntime};
 
-pub fn create(instance: Instance, name: &str) -> (SuInputRuntime, SuInstance, OpenXRDriver) {
+pub mod suggested_bindings;
+
+pub fn create(instance: Instance) -> (SuInputRuntime, SuInstance, OpenXRDriver) {
     let runtime = suinput::load_runtime();
     let driver = openxr_driver::OpenXRDriver::new(instance);
 
-    let instance = runtime.create_instance(name);
+    //TODO
+    let instance = runtime.create_instance(None);
 
     (runtime, instance, driver)
 }

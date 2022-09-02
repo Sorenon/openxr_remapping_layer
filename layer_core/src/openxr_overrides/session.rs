@@ -9,7 +9,14 @@ pub(super) unsafe fn get_interceptors(name: &str) -> Option<xr::pfn::VoidFunctio
         "xrAttachSessionActionSets" => {
             transmute(xr_attach_session_action_sets as AttachSessionActionSets)
         }
-        "xrSyncAction" => transmute(sync_actions as SyncActions),
+        "xrSyncAction" => transmute(xr_sync_actions as SyncActions),
+        "xrGetActionStateBoolean" => {
+            transmute(xr_get_action_state_boolean as GetActionStateBoolean)
+        }
+        "xrGetActionStateFloat" => transmute(xr_get_action_state_float as GetActionStateFloat),
+        "xrGetActionStateVector2f" => {
+            transmute(xr_get_action_state_vector2f as GetActionStateVector2f)
+        }
         _ => return None,
     })
 }
@@ -27,7 +34,7 @@ unsafe extern "system" fn xr_attach_session_action_sets(
     })
 }
 
-unsafe extern "system" fn sync_actions(
+unsafe extern "system" fn xr_sync_actions(
     session: xr::Session,
     sync_info: *const xr::ActionsSyncInfo,
 ) -> xr::Result {
@@ -38,4 +45,31 @@ unsafe extern "system" fn sync_actions(
             sync_info.count_active_action_sets as usize,
         ))
     })
+}
+
+unsafe extern "system" fn xr_get_action_state_boolean(
+    session: xr::Session,
+    get_info: *const xr::ActionStateGetInfo,
+    state: *mut xr::ActionStateBoolean,
+) -> xr::Result {
+    let get_info = &*get_info;
+    session.run(|session| {
+        session.xr_get_action_state_boolean(get_info.action, get_info.subaction_path, &mut *state)
+    })
+}
+
+unsafe extern "system" fn xr_get_action_state_float(
+    session: xr::Session,
+    get_info: *const xr::ActionStateGetInfo,
+    state: *mut xr::ActionStateFloat,
+) -> xr::Result {
+    todo!()
+}
+
+unsafe extern "system" fn xr_get_action_state_vector2f(
+    session: xr::Session,
+    get_info: *const xr::ActionStateGetInfo,
+    state: *mut xr::ActionStateVector2f,
+) -> xr::Result {
+    todo!()
 }

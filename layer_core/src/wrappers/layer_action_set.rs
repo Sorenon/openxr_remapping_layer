@@ -2,18 +2,12 @@ use std::sync::{Arc, Weak};
 
 use openxr::sys as xr;
 use parking_lot::{RwLockReadGuard, RwLockWriteGuard};
-use suinput::{
-    action_type::{
-        Axis1d, Axis1dActionCreateInfo, Axis2d, Axis2dActionCreateInfo, BooleanActionCreateInfo,
-        Value,
-    },
-    SuAction, SuActionSet,
-};
+use suinput::SuActionSet;
 use thunderdome::Arena;
 
 use crate::{
     str_from_bytes_until_nul,
-    wrappers::layer_action::{self, LayerAction, SingletonAction},
+    wrappers::layer_action::{self, LayerAction},
 };
 
 use super::{

@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::ops::Deref;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -61,6 +62,7 @@ fn create_instance(
             poison: AtomicBool::new(false),
             core: openxr::raw::Instance::load(&entry, *instance)?,
             exts: InstanceExtensions::load(&entry, *instance, &ExtensionSet::default())?,
+            instance: *instance,
         }
     };
 
@@ -81,13 +83,12 @@ fn create_instance(
         _ => Runtime::Other(runtime_name.to_string()),
     };
 
-    let (suinput_runtime, suinput_instance, suinput_driver) = crate::input::create(
-        unsafe { Instance::from_raw(entry, *instance, inner.exts).unwrap() },
-        application_name,
-    );
+    let (suinput_runtime, suinput_instance, suinput_driver) =
+        crate::input::create(unsafe { Instance::from_raw(entry, *instance, inner.exts).unwrap() });
 
     let wrapper = InstanceWrapper {
         handle: *instance,
+        application_info: (*instance_info).application_info,
         inner: Arc::new(inner),
         systems: Default::default(),
         sessions: Default::default(),
@@ -95,6 +96,7 @@ fn create_instance(
         suinput_runtime,
         suinput_instance,
         suinput_driver: Mutex::new(suinput_driver),
+        suggested_bindings: Mutex::new(HashMap::new()),
     };
 
     xr::Instance::all_wrappers().insert(*instance, Arc::new(wrapper));

@@ -3,15 +3,10 @@ use std::sync::{Arc, Weak};
 use openxr::sys as xr;
 use parking_lot::{RwLockReadGuard, RwLockWriteGuard};
 use suinput::{
-    action_type::{
-        Axis1d, Axis1dActionCreateInfo, Axis2d, Axis2dActionCreateInfo, BooleanActionCreateInfo,
-        Value,
-    },
+    action_type::{Axis1d, Axis2d},
     SuAction, SuActionSet,
 };
-use thunderdome::Arena;
-
-use crate::str_from_bytes_until_nul;
+use thunderdome::{Arena, Index};
 
 use super::instance::{InnerInstance, InstanceWrapper};
 
@@ -27,6 +22,14 @@ pub fn all<'a>() -> RwLockReadGuard<'a, Arena<Arc<LayerAction>>> {
 
 pub fn all_mut<'a>() -> RwLockWriteGuard<'a, Arena<Arc<LayerAction>>> {
     unsafe { super::ACTIONS.get().unwrap().write() }
+}
+
+pub fn get(arena: &Arena<Arc<LayerAction>>, handle: xr::Action) -> openxr::Result<&Arc<LayerAction>> {
+    let index = match Index::from_bits(handle.into_raw()) {
+        Some(index) => index,
+        None => return Err(xr::Result::ERROR_HANDLE_INVALID),
+    };
+    arena.get(index).ok_or(xr::Result::ERROR_HANDLE_INVALID)
 }
 
 pub enum SubActions {

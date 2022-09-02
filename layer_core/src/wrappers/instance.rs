@@ -1,14 +1,14 @@
-use std::sync::{atomic::AtomicBool, Arc};
+use std::{sync::{atomic::AtomicBool, Arc}, collections::HashMap};
 
 use dashmap::DashMap;
 use log::{debug, info};
 use once_cell::sync::OnceCell;
-use openxr::sys as xr;
+use openxr::{sys as xr, Path};
 use openxr_driver::OpenXRDriver;
 use parking_lot::Mutex;
-use suinput::{SuInputRuntime, SuInstance};
+use suinput::{instance::SuInstance, SuInputRuntime, SuPath, SuBindingLayout};
 
-use crate::{str_from_bytes_until_nul, ToResult};
+use crate::{str_from_bytes_until_nul, ToResult, input::suggested_bindings::SuggestedBindings};
 
 use super::{
     layer_action_set::{self, LayerActionSet},
@@ -18,6 +18,7 @@ use super::{
 
 pub struct InstanceWrapper {
     pub handle: xr::Instance,
+    pub application_info: xr::ApplicationInfo,
     pub inner: Arc<InnerInstance>,
     pub systems: DashMap<xr::SystemId, SystemMeta>,
     pub sessions: DashMap<xr::Session, Arc<SessionWrapper>>,
@@ -25,10 +26,12 @@ pub struct InstanceWrapper {
     pub suinput_runtime: SuInputRuntime,
     pub suinput_instance: SuInstance,
     pub suinput_driver: Mutex<OpenXRDriver>,
+    pub suggested_bindings: Mutex<HashMap<SuPath, SuggestedBindings>>,
 }
 
 pub struct InnerInstance {
     pub poison: AtomicBool,
+    pub instance: openxr::sys::Instance,
     pub core: openxr::raw::Instance,
     pub exts: openxr::InstanceExtensions,
 }
@@ -59,6 +62,14 @@ impl XrHandle for xr::Instance {
         Self: Sized + std::hash::Hash,
     {
         unsafe { super::INSTANCE_WRAPPERS.get().unwrap() }
+    }
+}
+
+impl InnerInstance {
+    pub fn path_to_string(&self, path: xr::Path) -> Result<String, xr::Result> {
+        crate::ffi_helpers::get_str(|input, output, buf| unsafe {
+            (self.core.path_to_string)(self.instance, path, input, output, buf)
+        })
     }
 }
 
@@ -126,6 +137,24 @@ impl InstanceWrapper {
         }));
 
         *handle_out = xr::ActionSet::from_raw(handle.to_bits());
+
+        Ok(xr::Result::SUCCESS)
+    }
+
+    pub fn xr_suggest_interaction_profile_bindings(
+        self: &Arc<Self>,
+        interaction_profile: Path,
+        suggested_bindings: &[xr::ActionSuggestedBinding],
+    ) -> Result<xr::Result, xr::Result> {
+        let interaction_profile_string = self.inner.path_to_string(interaction_profile)?;
+        let su_interaction_profile_path = self
+            .suinput_instance
+            .get_path(&interaction_profile_string)
+            .map_err(|_| xr::Result::ERROR_PATH_UNSUPPORTED)?;
+
+        
+
+            
 
         Ok(xr::Result::SUCCESS)
     }
